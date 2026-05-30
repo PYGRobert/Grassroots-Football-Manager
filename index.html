@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>草根足球经理 - 骰子Roguelike</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: linear-gradient(145deg, #1e3e2c 0%, #0f2a1a 100%);
+            font-family: system-ui, 'Segoe UI', 'Courier New', monospace;
+            margin: 0;
+            padding: 16px;
+            color: #fef3cf;
+            min-height: 100vh;
+        }
+        .game-shell {
+            max-width: 550px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            overflow: hidden;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid #e9c891;
+        }
+        .top-bar {
+            background: #2c2418e0;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #f5b642;
+        }
+        .gold {
+            color: #ffd966;
+            text-shadow: 0 0 3px #b87c00;
+        }
+        .day {
+            background: #4a3620;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        .tabs {
+            display: flex;
+            background: #1f2a1cd9;
+            gap: 4px;
+            padding: 8px 12px 0 12px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: #2d3a26;
+            border: none;
+            padding: 10px 0;
+            border-radius: 30px 30px 0 0;
+            font-weight: bold;
+            font-family: inherit;
+            color: #eedbae;
+            font-size: 0.9rem;
+            transition: 0.1s;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: #e0a82b;
+            color: #2c1c0a;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .tab-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .tab-pane {
+            display: none;
+            padding: 16px;
+            background: #1f2f1ccc;
+            backdrop-filter: blur(4px);
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .player-card {
+            background: #fcf3da;
+            color: #2d2b1f;
+            border-radius: 28px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .player-info {
+            flex: 2;
+            min-width: 0;
+        }
+        .player-name {
+            font-weight: bold;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pos-badge {
+            background: #2b5f2f;
+            color: white;
+            border-radius: 30px;
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            white-space: nowrap;
+        }
+        .dice-preview {
+            font-family: monospace;
+            font-size: 0.7rem;
+            background: #e2d8b6;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-top: 4px;
+            display: inline-block;
+            word-break: break-all;
+        }
+        .player-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .icon-btn {
+            background: #bc8f4b;
+            border: none;
+            border-radius: 40px;
+            padding: 5px 12px;
+            font-weight: bold;
+            font-size: 0.7rem;
+            color: #2c1c0a;
+            cursor: pointer;
+        }
+        .sell-btn {
+            background: #aa6f3c;
+        }
+        .start-btn {
+            background: #d48c2c;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2rem;
+            margin: 12px 0;
+            border-radius: 60px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .lineup-info {
+            background: #2c3724;
+            border-radius: 32px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .formation-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+            align-items: center;
+        }
+        .btn {
+            background: #e0a82b;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-small {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+        }
+        .log-area {
+            background: #0e1c0ac9;
+            border-radius: 28px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            max-height: 360px;
+            overflow-y: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+        .round-main-title {
+            font-weight: bold;
+            font-size: 1.35rem;
+            text-align: center;
+            background: #d48c2c50;
+            margin: 10px 0 6px 0;
+            padding: 8px 14px;
+            border-radius: 36px;
+            color: #ffe088;
+            letter-spacing: 2px;
+            border: 1px dashed #ffc857;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        .round-title {
+            font-weight: bold;
+            font-size: 1.05rem;
+            text-align: center;
+            background: #dba14d30;
+            margin: 6px 0;
+            padding: 5px 10px;
+            border-radius: 28px;
+            color: #ffdd99;
+        }
+        .funny-log {
+            color: #ffbc6e;
+            font-style: italic;
+        }
+        hr {
+            border-color: #dba14d;
+            margin: 12px 0;
+        }
+        .next-btn {
+            background: #e67e22;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            border-radius: 60px;
+            border: none;
+            font-weight: bold;
+            margin-top: 12px;
+            cursor: pointer;
+        }
+        .match-summary {
+            background: #2e5e2e;
+            border-radius: 32px;
+            padding: 12px;
+            margin-top: 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-card {
+            background: #2f2a1f;
+            border-radius: 48px;
+            max-width: 90%;
+            width: 380px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            color: #f9eec1;
+            border: 2px solid #ffc857;
+            text-align: center;
+        }
+        .modal-card .dice-detail {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #1a1810;
+            border-radius: 16px;
+            padding: 6px 10px;
+            margin: 6px 0;
+            color: #ffd966;
+        }
+        .warning-text {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin: 8px 0;
+            background: #3d1a1a;
+            border-radius: 16px;
+            padding: 6px 10px;
+        }
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-btn {
+            background: #4a6a3b;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 40px;
+            color: #ffefc0;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .filter-btn.active {
+            background: #e0a82b;
+            color: #2c1c0a;
+        }
+        .train-player-chip {
+            display: inline-block;
+            background: #826e42;
+            border-radius: 20px;
+            padding: 3px 10px;
+            margin: 3px;
+            cursor: pointer;
+            font-size: 0.73rem;
+            color: #ffefc0;
+            transition: 0.1s;
+        }
+        .train-player-chip:hover {
+            background: #a0894f;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-shell">
+        <div class="top-bar">
+            <span>⚽ 草根骰子足球</span>
+            <span>💰 <span id="goldAmount" class="gold">0</span></span>
+            <span class="day">📅 比赛日 <span id="matchDay">1</span></span>
+        </div>
+
+        <div class="tabs" id="tabBar">
+            <button class="tab-btn active" data-tab="team">🧢 我的球队</button>
+            <button class="tab-btn" data-tab="market">🏪 转会/训练</button>
+            <button class="tab-btn" data-tab="match">⚡ 比赛实况</button>
+        </div>
+
+        <div class="tab-pane active" id="tab-team">
+            <div class="formation-group">
+                <span style="font-weight:bold;">阵型:</span>
+                <div id="formationBtns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
+            <div class="lineup-info" id="lineupStatus">未选择完整首发</div>
+            <div class="filter-group">
+                <span>筛选位置:</span>
+                <button class="filter-btn active" data-filter="all">全部</button>
+                <button class="filter-btn" data-filter="forward">前锋</button>
+                <button class="filter-btn" data-filter="midfielder">中场</button>
+                <button class="filter-btn" data-filter="defender">后卫</button>
+                <button class="btn-small" id="sortByTotalBtn">按总值排序↓</button>
+            </div>
+            <div style="font-size:0.7rem; margin:8px 0;">👇 点击球员卡部署/撤出首发 (阵型: 后卫-中场-前锋)</div>
+            <div id="playerListContainer" style="max-height: 340px; overflow-y: auto;"></div>
+            <button class="start-btn" id="startMatchBtn">🎲 开始比赛！ 🎲</button>
+            <button class="btn btn-small" id="resetMatchPhaseBtn" style="width:100%; margin-top:5px;">重置赛前部署</button>
+        </div>
+
+        <div class="tab-pane" id="tab-market">
+            <div style="display: flex; justify-content: space-between;">
+                <strong>🏪 草根转会窗</strong>
+                <button class="btn btn-small" id="refreshMarketBtn">🔄 刷新球员 (2💰)</button>
+            </div>
+            <div id="marketList" style="max-height: 220px; overflow-y: auto; margin: 10px 0;"></div>
+            <hr>
+            <strong>💪 训练营 (5💰/人, 下轮停赛, 赛后回归+2属性, 每轮最多2人)</strong>
+            <div class="filter-group" style="margin-top:6px;">
+                <span style="font-size:0.7rem;">筛选:</span>
+                <button class="filter-btn active training-filter-btn" data-tfilter="all">全部</button>
+                <button class="filter-btn training-filter-btn" data-tfilter="forward">前锋</button>
+                <button class="filter-btn training-filter-btn" data-tfilter="midfielder">中场</button>
+                <button class="filter-btn training-filter-btn" data-tfilter="defender">后卫</button>
+            </div>
+            <div id="trainingSlots" style="margin:8px 0;"></div>
+            <button class="btn" id="trainBtn" style="width:100%; margin:5px 0">🏋️ 执行训练 (扣费并特训)</button>
+            <div id="trainingLockInfo" style="font-size:0.7rem; margin-top:5px; color:#ffbc6e;"></div>
+            <hr>
+            <button class="btn" id="nextWeekBtn" style="background:#308a3a; width:100%;">📅 下一轮比赛</button>
+            <div style="font-size:0.7rem; margin-top:8px;">💡 提示：出售球员得半价金币，训练球员下一场无法上场</div>
+        </div>
+
+        <div class="tab-pane" id="tab-match">
+            <div id="matchControlHint" style="margin-bottom: 8px;">⚔️ 回合制比赛，点击【继续】推进每一幕</div>
+            <div class="log-area" id="gameLog">
+                🎲 欢迎！草根经理。<br>
+                📱 部署好阵容后，点击【开始比赛】自动跳转此处。<br>
+                🤣 比赛为回合制，每一步都需要您点击【继续】来推进。
+            </div>
+            <button id="nextMatchStepBtn" class="next-btn" style="display:none;">⏩ 继续比赛 ⏩</button>
+        </div>
+    </div>
+
+    <script>
+        // ======================= 搞笑日志抽象池 =======================
+        const FUNNY_LIBS = {
+            normalPlay: (playerName, val, side) => [
+                `${side}${playerName} 普通发挥 (${val})，球滚了两米。`,
+                `${side}${playerName} 中规中矩 (${val})，像下班后的社畜。`,
+                `${side}${playerName} 勉强及格 (${val})，草根气质拿捏。`,
+                `${side}${playerName} 努力奔跑 (${val})，但球鞋有点滑。`,
+                `${side}${playerName} 兢兢业业 (${val})，对得起盒饭。`,
+            ],
+            excellentPlay: (playerName, val, side) => [
+                `${side}${playerName} 天神下凡 (${val})！全场起立鼓掌！👏`,
+                `${side}${playerName} 一记神仙操作 (${val})，观众惊呆！`,
+                `${side}${playerName} 踢出了人生巅峰 (${val})，草根之光！`,
+                `${side}${playerName} 如有神助 (${val})，对手只能目送！`,
+                `${side}${playerName} 瞬间爆种 (${val})，这球能吹一辈子！`,
+                `${side}${playerName} 灵魂附体 (${val})，教科书般的表现！`,
+            ],
+            midfieldFail: (playerName, side) => [
+                `${side}${playerName} 踩到瓜皮🍉直接滑跪，裁判都笑岔气了！`,
+                `${side}${playerName} 试图马赛回旋却把自己旋进了广告牌😵‍💫。`,
+                `${side}${playerName} 右脚的假动作晃丢了左脚的鞋，裁判罚下右脚！`,
+                `${side}${playerName} 突然拿走了边裁的旗子，被球童控制。`,
+                `${side}${playerName} 一记"小高球"直接传给角旗杆，全场爆笑。`,
+                `${side}${playerName} 中场散步式传球，直接传给对方饮水机管理员。`,
+                `${side}${playerName} 试图挑球过人，球过了人没过，还被绊倒了。`,
+            ],
+            midZero: () => [
+                "中场的博弈很激烈啊！什么球还在界外？这啥博弈？再来一次！",
+                "双方球员在中场集体冥想，裁判提议重踢中场圈⚪",
+                "球场上突然飞进一群鸽子，博弈无效！重新掷骰！",
+                "中场变成广场舞现场，裁判吹停整顿舞姿💃",
+            ],
+            attackFail: (playerName, side) => [
+                `${side}${playerName} 射门时鞋飞了出去，连球鞋带球飞出边线🥿`,
+                `${side}${playerName} 单刀之际被香蕉皮滑倒，趴在地上吃草。`,
+                `${side}${playerName} 头球攻门顶到了自家球迷的充气棒上🎈`,
+                `${side}${playerName} 大力出奇迹，把球踢爆了……裁判暂停换球。`,
+                `${side}${playerName} 面对空门思考人生，然后被草皮绊倒。`,
+                `${side}${playerName} 一脚抽射直奔角旗区，角旗杆瑟瑟发抖。`,
+            ],
+            defendFail: (playerName, side) => [
+                `${side}${playerName} 解围踢空，原地转三圈把自己晃晕🌀`,
+                `${side}${playerName} 冒顶失误，用脸挡住了球但流鼻血了🤕`,
+                `${side}${playerName} 防守时突然抽筋，表演了一套地板动作。`,
+                `${side}${playerName} 试图滑铲却铲到了空气，还磨破了裤子。`,
+                `${side}${playerName} 盯人不盯球，和对方球员聊起了昨晚的烧烤。`,
+            ],
+        };
+        const TRAINING_RETURN_JOKES = [
+            "变秃了，也变强了💪",
+            "换了个不用系鞋带的球鞋👟",
+            "吃了一个月的烧烤，腿上长肌肉了🍖",
+            "在村口练出了新绝技🏘️",
+            "特训归来，连西瓜皮都不怕了🍉",
+            "闭关修炼完毕，气质都变了✨",
+            "据说在鱼塘里练出了平衡感🐟",
+            "被广场舞大妈特训了反应速度💃",
+            "每天搬废品练就了钢筋铁骨🏋️",
+            "剃头师傅说了，发型越怪踢得越快💇",
+        ];
+
+        function getRandomFunny(arrGen, ...params) {
+            let arr = typeof arrGen === 'function' ? arrGen(...params) : arrGen;
+            if (!Array.isArray(arr) || arr.length === 0) return "发生了奇妙的事!";
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+        function getRandomTrainingJoke() {
+            return TRAINING_RETURN_JOKES[Math.floor(Math.random() * TRAINING_RETURN_JOKES.length)];
+        }
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // ======================= 名字去重系统 =======================
+        let usedPlayerNames = new Set(); // 全局已用名字集合
+
+        // 从给定名字池中获取一个独一无二的名字（池中名字用完则自动加编号）
+        function getUniqueNameFromPool(pool) {
+            // 过滤出尚未使用的原始名字
+            const available = pool.filter(name => !usedPlayerNames.has(name));
+            if (available.length > 0) {
+                const chosen = available[Math.floor(Math.random() * available.length)];
+                usedPlayerNames.add(chosen);
+                return chosen;
+            } else {
+                // 所有原始名字都已使用，随机选一个基础名，然后追加 (2), (3) ...
+                const base = pool[Math.floor(Math.random() * pool.length)];
+                let suffix = 2;
+                let candidate;
+                do {
+                    candidate = `${base}(${suffix})`;
+                    suffix++;
+                } while (usedPlayerNames.has(candidate));
+                usedPlayerNames.add(candidate);
+                return candidate;
+            }
+        }
+
+        // ======================= 游戏核心状态 =======================
+        let gameState = {
+            players: [],
+            gold: 50,
+            matchDay: 1,
+            formation: "442",
+            lineup: { forwards: [], midfielders: [], defenders: [] },
+            computerPlayers: [],
+            computerFormation: "442",
+            marketPlayers: [],
+            trainingSlots: [null, null],
+            phase: "match_pre",
+            trainingLocked: false,
+            pendingReturns: [],
+        };
+
+        function randomRange(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function generateDiceFaces(total) {
+            let faces = new Array(6);
+            let sum = 0;
+            for (let i = 0; i < 5; i++) { let v = randomRange(-2, 7); faces[i] = v; sum += v; }
+            let last = total - sum;
+            last = Math.min(7, Math.max(-2, last));
+            faces[5] = last;
+            let actual = faces.reduce((a, b) => a + b, 0);
+            if (actual !== total) faces[0] += (total - actual);
+            return faces;
+        }
+
+        function getTotalFromFaces(faces) { return faces.reduce((a, b) => a + b, 0); }
+
+        const funnyNames = [
+            "瓜摊老板", "烧烤大王", "修车师傅", "村口剃头", "外卖闪电", "广场舞王", "鱼塘塘主", "废品战神", "煎饼果子", "楼道保安",
+            "三轮车神", "收废铁叔", "炒饭一哥", "地摊传奇", "修鞋老张", "快递小刘", "搬砖达人", "炸串大叔", "水果摊王", "豆腐脑叔",
+            "臭豆腐佬", "羊肉串哥", "烤地瓜爷", "蒸饺大妈", "爆米花匠", "空调师傅", "防水专家", "开锁大王", "盲人按摩", "管道疏通"
+        ];
+        const computerNames = [
+            "流云使", "惊鸿客", "铁衣卫", "破阵子", "定风波", "揽月手", "御风者", "飞星子", "千钧坠", "穿云箭",
+            "裂石脚", "镇山岳", "追光者", "穿杨手", "不动山", "拂柳剑", "踏雪行", "断江客", "锁烟霞", "逐日弓",
+            "覆雨手", "听雷子", "横江锁", "折梅客", "贯石拳", "照夜寒", "抚琴君", "扫云僧", "落星刃", "止水心"
+        ];
+
+        function generatePlayer(position, idBase, forcedTotal = null, namePool = funnyNames) {
+            let minTotal = (position === 'midfielder') ? 12 : 10;
+            let maxTotal = (position === 'midfielder') ? 15 : 18;
+            let total = forcedTotal !== null ? forcedTotal : randomRange(minTotal, maxTotal);
+            let dice = generateDiceFaces(total);
+            // 使用去重机制获取唯一名字
+            let uniqueName = getUniqueNameFromPool(namePool);
+            return {
+                id: idBase + '_' + Date.now() + '_' + Math.random(),
+                name: `【${uniqueName}】`,
+                position,
+                diceFaces: dice,
+                totalStat: getTotalFromFaces(dice),
+                trainingSuspension: false,
+                trainingBeforeFaces: null,
+                trainingBeforeTotal: null,
+                price: () => getTotalFromFaces(dice) * 5
+            };
+        }
+
+        function initSquad() {
+            let arr = [];
+            // 5前锋(总10) + 6中场(总12) + 7后卫(总10)
+            for (let i = 0; i < 5; i++) arr.push(generatePlayer('forward', 'init_fw' + i, 10));
+            for (let i = 0; i < 6; i++) arr.push(generatePlayer('midfielder', 'init_mf' + i, 12));
+            for (let i = 0; i < 7; i++) arr.push(generatePlayer('defender', 'init_df' + i, 10));
+            return arr;
+        }
+
+        function generateComputerTeam() {
+            let comp = [];
+            for (let i = 0; i < 3; i++) comp.push(generatePlayer('forward', 'cpu_fw' + i, randomRange(10, 16), computerNames));
+            for (let i = 0; i < 4; i++) comp.push(generatePlayer('midfielder', 'cpu_mf' + i, randomRange(12, 15), computerNames));
+            for (let i = 0; i < 4; i++) comp.push(generatePlayer('defender', 'cpu_df' + i, randomRange(10, 16), computerNames));
+            return comp;
+        }
+
+        function getFormationNumbers(fm) {
+            if (fm === '442') return { df: 4, mf: 4, fw: 2 };
+            if (fm === '433') return { df: 4, mf: 3, fw: 3 };
+            if (fm === '343') return { df: 3, mf: 4, fw: 3 };
+            if (fm === '532') return { df: 5, mf: 3, fw: 2 };
+            return { df: 4, mf: 4, fw: 2 };
+        }
+
+        function getMaxRequiredForPosition(position) {
+            const allFormations = ['442', '433', '343', '532'];
+            let maxNeed = 0;
+            allFormations.forEach(fm => {
+                let need = getFormationNumbers(fm);
+                if (position === 'defender') maxNeed = Math.max(maxNeed, need.df);
+                if (position === 'midfielder') maxNeed = Math.max(maxNeed, need.mf);
+                if (position === 'forward') maxNeed = Math.max(maxNeed, need.fw);
+            });
+            return maxNeed;
+        }
+
+        function getAvailableCount(position, excludeId = null) {
+            return gameState.players.filter(p =>
+                p.position === position && !p.trainingSuspension && p.id !== excludeId
+            ).length;
+        }
+
+        function getAffectedFormations(position, excludeId) {
+            const remaining = getAvailableCount(position, excludeId);
+            const allFormations = ['442', '433', '343', '532'];
+            let affected = [];
+            allFormations.forEach(fm => {
+                let need = getFormationNumbers(fm);
+                let required = position === 'defender' ? need.df : (position === 'midfielder' ? need.mf : need.fw);
+                if (remaining < required) affected.push(fm);
+            });
+            return affected;
+        }
+
+        let currentFilter = "all";
+        let trainingFilter = "all";
+        let sortDesc = true;
+
+        function refreshUI() {
+            document.getElementById('goldAmount').innerText = gameState.gold;
+            document.getElementById('matchDay').innerText = gameState.matchDay;
+            renderPlayerListWithFilter();
+            renderMarket();
+            renderTrainingSlots();
+            renderFormationBtns();
+            updateLineupStatus();
+            let lockInfo = document.getElementById('trainingLockInfo');
+            if (gameState.trainingLocked) lockInfo.innerText = "⚠️ 本轮训练已执行，槽位锁定，下轮比赛后可继续训练。";
+            else lockInfo.innerText = "✨ 每轮最多训练2人，点击球员放入槽位后执行训练。";
+        }
+
+        function updateLineupStatus() {
+            let need = getFormationNumbers(gameState.formation);
+            let curFw = gameState.lineup.forwards.length,
+                curMf = gameState.lineup.midfielders.length,
+                curDf = gameState.lineup.defenders.length;
+            let ok = (curFw === need.fw && curMf === need.mf && curDf === need.df);
+            let statusDiv = document.getElementById('lineupStatus');
+            if (statusDiv) statusDiv.innerHTML =
+                `📋 ${gameState.formation} 需 ${need.df}后卫 ${need.mf}中场 ${need.fw}前锋 | 当前 ${curDf}/${curMf}/${curFw} ${ok ? '✅ 已就绪' : '❌ 人员不足'}`;
+            return ok;
+        }
+
+        function posBadge(position) {
+            const map = { forward: 'FW', midfielder: 'MF', defender: 'DF' };
+            return `<span class="pos-badge">${map[position]}</span>`;
+        }
+
+        function togglePlayerLineup(player) {
+            if (gameState.phase !== 'transfer' && gameState.phase !== 'match_pre') { addLog("只能在休赛期或赛前部署阵容！"); return false; }
+            if (player.trainingSuspension) { addLog(`${player.name} 正在特训康复，无法上场`); return false; }
+            let need = getFormationNumbers(gameState.formation);
+            let curFw = gameState.lineup.forwards.length,
+                curMf = gameState.lineup.midfielders.length,
+                curDf = gameState.lineup.defenders.length;
+            const isSelected = (gameState.lineup.forwards.includes(player.id) || gameState.lineup.midfielders.includes(player.id) || gameState.lineup.defenders.includes(player.id));
+            if (isSelected) {
+                gameState.lineup.forwards = gameState.lineup.forwards.filter(i => i !== player.id);
+                gameState.lineup.midfielders = gameState.lineup.midfielders.filter(i => i !== player.id);
+                gameState.lineup.defenders = gameState.lineup.defenders.filter(i => i !== player.id);
+                addLog(`📌 将 ${player.name} 撤出首发`);
+            } else {
+                if (player.position === 'forward' && curFw < need.fw) gameState.lineup.forwards.push(player.id);
+                else if (player.position === 'midfielder' && curMf < need.mf) gameState.lineup.midfielders.push(player.id);
+                else if (player.position === 'defender' && curDf < need.df) gameState.lineup.defenders.push(player.id);
+                else { addLog(`位置不符合或已满，无法首发`); return false; }
+                addLog(`✅ ${player.name} 进入首发阵容`);
+            }
+            refreshUI();
+            return true;
+        }
+
+        function renderPlayerListWithFilter() {
+            let container = document.getElementById('playerListContainer');
+            if (!container) return;
+            let filtered = gameState.players.filter(p => {
+                if (currentFilter === 'all') return true;
+                return p.position === currentFilter;
+            });
+            if (sortDesc) filtered.sort((a, b) => b.totalStat - a.totalStat);
+            else filtered.sort((a, b) => a.totalStat - b.totalStat);
+            container.innerHTML = '';
+            filtered.forEach(p => {
+                let card = document.createElement('div');
+                card.className = 'player-card';
+                let isSelected = (gameState.lineup.forwards.includes(p.id) || gameState.lineup.midfielders.includes(p.id) || gameState.lineup.defenders.includes(p.id));
+                card.innerHTML = `
+                    <div class="player-info">
+                        <div class="player-name">${p.name} ${posBadge(p.position)}</div>
+                        <div class="dice-preview">🎲 ${p.diceFaces.join(',')} (总值${p.totalStat})</div>
+                        <div style="font-size:0.65rem;">${p.trainingSuspension?'🔒停赛':''}</div>
+                    </div>
+                    <div class="player-actions">
+                        <button class="icon-btn" data-action="toggle">${isSelected?'撤出':'部署'}</button>
+                        <button class="icon-btn sell-btn" data-action="sell">卖出</button>
+                    </div>
+                `;
+                card.querySelector('[data-action="toggle"]').onclick = (e) => { e.stopPropagation(); togglePlayerLineup(p); };
+                card.querySelector('[data-action="sell"]').onclick = (e) => { e.stopPropagation(); sellPlayer(p); };
+                container.appendChild(card);
+            });
+        }
+
+        function sellPlayer(p) {
+            if (gameState.phase !== 'transfer') { addLog("休赛期才能出售球员"); return; }
+            let sellPrice = Math.floor(p.price() / 2);
+            let affected = getAffectedFormations(p.position, p.id);
+            let maxNeed = getMaxRequiredForPosition(p.position);
+            let remaining = getAvailableCount(p.position, p.id);
+
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'modal-mask';
+                let warningHTML = '';
+                if (affected.length > 0) {
+                    warningHTML = `<div class="warning-text">⚠️ 卖出后该位置可用球员仅${remaining}人（需${maxNeed}人），以下阵型将无法选择：${affected.join('、')}</div>`;
+                }
+                modal.innerHTML = `
+                    <div class="modal-card">
+                        <h3>💸 确认出售</h3>
+                        <p><b>${p.name}</b> ${posBadge(p.position)}</p>
+                        <div class="dice-detail">🎲 ${p.diceFaces.join(',')} (总值${p.totalStat})</div>
+                        <p>售价: <b style="color:#ffd966;">${sellPrice}💰</b></p>
+                        ${warningHTML}
+                        <div style="display:flex; gap:10px; margin-top:12px; justify-content:center;">
+                            <button id="confirmSellBtn" class="btn" style="background:#e74c3c;">确认卖出</button>
+                            <button id="cancelSellBtn" class="btn">取消</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                document.getElementById('confirmSellBtn').onclick = () => {
+                    modal.remove();
+                    gameState.gold += sellPrice;
+                    gameState.players = gameState.players.filter(pl => pl.id !== p.id);
+                    gameState.lineup.forwards = gameState.lineup.forwards.filter(id => id !== p.id);
+                    gameState.lineup.midfielders = gameState.lineup.midfielders.filter(id => id !== p.id);
+                    gameState.lineup.defenders = gameState.lineup.defenders.filter(id => id !== p.id);
+                    addLog(`💸 出售 ${p.name} 获得 ${sellPrice} 金币`);
+                    refreshUI();
+                    resolve();
+                };
+                document.getElementById('cancelSellBtn').onclick = () => { modal.remove(); resolve(); };
+                modal.addEventListener('click', (e) => { if (e.target === modal) { modal.remove(); resolve(); } });
+            });
+        }
+
+        function renderMarket() {
+            let container = document.getElementById('marketList');
+            if (!container) return;
+            container.innerHTML = '';
+            gameState.marketPlayers.forEach(p => {
+                let div = document.createElement('div');
+                div.className = 'player-card';
+                div.innerHTML = `
+                    <div class="player-info">
+                        <div class="player-name">${p.name} ${posBadge(p.position)}</div>
+                        <div class="dice-preview">🎲 ${p.diceFaces.join(',')} (总值${p.totalStat})</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-weight:bold;color:#ffd966;">💰${p.price()}</span>
+                        <button class="icon-btn">签约</button>
+                    </div>
+                `;
+                div.querySelector('button').onclick = () => {
+                    if (gameState.gold >= p.price()) {
+                        gameState.gold -= p.price();
+                        gameState.players.push(p);
+                        gameState.marketPlayers = gameState.marketPlayers.filter(m => m.id !== p.id);
+                        addLog(`✍️ 签下 ${p.name}`);
+                        refreshUI();
+                    } else addLog("金币不足！");
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function refreshMarket() {
+            if (gameState.gold < 2) { addLog("刷新需2金币"); return; }
+            gameState.gold -= 2;
+            let newList = [];
+            for (let i = 0; i < 3; i++) {
+                let pos = ['forward', 'midfielder', 'defender'][Math.floor(Math.random() * 3)];
+                newList.push(generatePlayer(pos, 'market' + i, randomRange(10, 17)));
+            }
+            gameState.marketPlayers = newList;
+            addLog("🃏 转会市场刷新三名草根球员");
+            refreshUI();
+        }
+
+        function renderTrainingSlots() {
+            let div = document.getElementById('trainingSlots');
+            if (!div) return;
+            div.innerHTML = '<div style="display:flex; gap:8px; flex-wrap:wrap;"></div>';
+            let slotDiv = div.querySelector('div') || div;
+            slotDiv.innerHTML = '';
+            gameState.trainingSlots.forEach((sid, idx) => {
+                let p = sid ? gameState.players.find(pl => pl.id === sid) : null;
+                let btn = document.createElement('button');
+                btn.className = 'btn btn-small';
+                if (p) {
+                    btn.innerHTML = `${p.name} ${posBadge(p.position)} <span style="font-size:0.6rem;">🎲${p.diceFaces.join(',')}(总${p.totalStat})</span> ✖`;
+                } else {
+                    btn.innerText = `槽位${idx+1} 空`;
+                }
+                btn.disabled = gameState.trainingLocked;
+                btn.onclick = () => { if (p && !gameState.trainingLocked) { gameState.trainingSlots[idx] = null; addLog(`移除训练 ${p.name}`); refreshUI(); } };
+                slotDiv.appendChild(btn);
+            });
+            if (!gameState.trainingLocked) {
+                let allTrainable = gameState.players.filter(p => !p.trainingSuspension && p.totalStat < 18 && !gameState.trainingSlots.includes(p.id));
+                let filteredTrainable = allTrainable.filter(p => {
+                    if (trainingFilter === 'all') return true;
+                    return p.position === trainingFilter;
+                });
+                let hint = document.createElement('div');
+                hint.style.marginTop = '6px';
+                hint.style.width = '100%';
+                hint.innerHTML = '<small>👇 点击球员送入训练槽 (暂不扣费，执行训练时统一扣)</small><br>';
+                if (filteredTrainable.length === 0) {
+                    hint.innerHTML += '<span style="color:#999;font-size:0.7rem;">没有符合条件的球员可训练</span>';
+                }
+                filteredTrainable.forEach(p => {
+                    let span = document.createElement('span');
+                    span.className = 'train-player-chip';
+                    span.innerHTML = `${p.name} ${posBadge(p.position)} <span style="font-size:0.6rem;">🎲${p.diceFaces.join(',')}(总${p.totalStat})</span>`;
+                    span.onclick = () => {
+                        if (gameState.trainingLocked) { addLog("本轮训练已执行，请进入下一轮比赛后再训练"); return; }
+                        let emptyIdx = gameState.trainingSlots.findIndex(s => s === null);
+                        if (emptyIdx === -1) { addLog("训练槽满，请先移除"); return; }
+                        gameState.trainingSlots[emptyIdx] = p.id;
+                        addLog(`${p.name} 进入训练预备槽，点击执行训练将扣费并特训。`);
+                        refreshUI();
+                    };
+                    hint.appendChild(span);
+                });
+                slotDiv.appendChild(hint);
+            } else {
+                let lockMsg = document.createElement('div');
+                lockMsg.innerText = "🔒 训练已锁定，请进行下一轮比赛后重新训练";
+                lockMsg.style.fontSize = '0.7rem';
+                lockMsg.style.marginTop = '6px';
+                lockMsg.style.width = '100%';
+                slotDiv.appendChild(lockMsg);
+            }
+        }
+
+        function executeTraining() {
+            if (gameState.trainingLocked) { addLog("本轮训练已经执行过了！请进入下一轮比赛。"); return; }
+            let totalCost = 0;
+            for (let i = 0; i < gameState.trainingSlots.length; i++) {
+                let sid = gameState.trainingSlots[i];
+                if (sid) {
+                    let p = gameState.players.find(pl => pl.id === sid);
+                    if (p && p.totalStat < 18) totalCost += 5;
+                }
+            }
+            if (totalCost > gameState.gold) { addLog(`训练需要${totalCost}金币，金币不足！`); return; }
+            if (totalCost === 0) { addLog("没有待训练的球员，请先添加至训练槽"); return; }
+            gameState.gold -= totalCost;
+            let trainedAny = false;
+            for (let i = 0; i < gameState.trainingSlots.length; i++) {
+                let sid = gameState.trainingSlots[i];
+                if (sid) {
+                    let p = gameState.players.find(pl => pl.id === sid);
+                    if (p && p.totalStat < 18) {
+                        p.trainingBeforeFaces = [...p.diceFaces];
+                        p.trainingBeforeTotal = p.totalStat;
+                        p.trainingSuspension = true;
+                        gameState.pendingReturns.push({
+                            id: p.id,
+                            name: p.name,
+                            position: p.position,
+                            oldFaces: [...p.diceFaces],
+                            oldTotal: p.totalStat,
+                        });
+                        addLog(`🏋️ ${p.name} 进入特训营，下轮缺席，赛后回归！`);
+                        trainedAny = true;
+                    }
+                    gameState.trainingSlots[i] = null;
+                }
+            }
+            if (trainedAny) gameState.trainingLocked = true;
+            else addLog("没有合适的训练目标或已达上限");
+            refreshUI();
+        }
+
+        async function applyTrainingReturns() {
+            if (gameState.pendingReturns.length === 0) return;
+            gameState.pendingReturns.forEach(pr => {
+                let player = gameState.players.find(p => p.id === pr.id);
+                if (!player) return;
+                let faces = [...player.diceFaces];
+                let additions = 0;
+                let attempts = 0;
+                while (additions < 2 && attempts < 20) {
+                    let idx = Math.floor(Math.random() * 6);
+                    if (faces[idx] < 7) {
+                        faces[idx]++;
+                        additions++;
+                    }
+                    attempts++;
+                }
+                if (additions < 2) {
+                    for (let i = 0; i < 6 && additions < 2; i++) {
+                        if (faces[i] < 7) { faces[i]++; additions++; }
+                    }
+                }
+                player.diceFaces = faces;
+                player.totalStat = getTotalFromFaces(faces);
+                pr.newFaces = [...faces];
+                pr.newTotal = player.totalStat;
+                pr.joke = getRandomTrainingJoke();
+            });
+
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'modal-mask';
+                let playersHTML = gameState.pendingReturns.map(pr => `
+                    <div style="background:#1e2f1a;border-radius:20px;padding:10px;margin:8px 0;text-align:left;">
+                        <b>${pr.name}</b> ${posBadge(pr.position)} 特训归来！
+                        <div style="font-size:0.75rem;margin:4px 0;">旧骰子: ${pr.oldFaces.join(',')} (总${pr.oldTotal})</div>
+                        <div style="font-size:0.75rem;margin:4px 0;color:#4caf50;">新骰子: ${pr.newFaces.join(',')} (总${pr.newTotal}) ⬆</div>
+                        <div style="font-style:italic;color:#ffbc6e;font-size:0.8rem;">"${pr.joke}"</div>
+                    </div>
+                `).join('');
+                modal.innerHTML = `
+                    <div class="modal-card">
+                        <h3>🏋️ 特训球员回归！</h3>
+                        ${playersHTML}
+                        <button id="confirmReturnBtn" class="btn" style="margin-top:12px;">✅ 欢迎归队！</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                document.getElementById('confirmReturnBtn').onclick = () => {
+                    modal.remove();
+                    gameState.players.forEach(p => { p.trainingSuspension = false; });
+                    gameState.pendingReturns = [];
+                    resolve();
+                };
+                modal.addEventListener('click', (e) => { if (e.target === modal) { modal.remove(); resolve(); } });
+            });
+        }
+
+        function nextWeek() {
+            gameState.matchDay++;
+            gameState.lineup = { forwards: [], midfielders: [], defenders: [] };
+            gameState.phase = "match_pre";
+            gameState.trainingLocked = false;
+            gameState.trainingSlots = [null, null];
+            addLog(`📅 新的一周！请部署阵容迎战电脑。`);
+            switchTab('team');
+            refreshUI();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            let activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.dataset.tab === tabId);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        function setTabsEnabled(enabled) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (enabled) btn.classList.remove('disabled');
+                else btn.classList.add('disabled');
+            });
+        }
+
+        function addMatchLog(msg, className = null) {
+            let logDiv = document.getElementById('gameLog');
+            if (logDiv) {
+                let p = document.createElement('div');
+                if (className) p.className = className;
+                p.innerHTML = msg;
+                logDiv.appendChild(p);
+                logDiv.scrollTop = logDiv.scrollHeight;
+                if (logDiv.children.length > 60) logDiv.removeChild(logDiv.children[0]);
+            }
+        }
+
+        function addLog(msg, className = null) { addMatchLog(msg, className); }
+
+        function rollPlayerWithFlavor(player, sceneType, sideLabel) {
+            let val = player.diceFaces[Math.floor(Math.random() * 6)];
+            if (val <= 0) {
+                let lib = sceneType === 'midfield' ? FUNNY_LIBS.midfieldFail : (sceneType === 'attack' ? FUNNY_LIBS.attackFail : FUNNY_LIBS.defendFail);
+                let msg = getRandomFunny(lib, player.name, sideLabel);
+                addLog(`🤣 ${msg} (骰出${val})`);
+                return 0;
+            } else if (val <= 4) {
+                let msg = getRandomFunny(FUNNY_LIBS.normalPlay, player.name, val, sideLabel);
+                addLog(`😐 ${msg}`);
+                return val;
+            } else {
+                let msg = getRandomFunny(FUNNY_LIBS.excellentPlay, player.name, val, sideLabel);
+                addLog(`✨ ${msg}`);
+                return val;
+            }
+        }
+
+        let matchMachine = {
+            active: false,
+            steps: [],
+            currentStepResolve: null,
+            ourLineup: null,
+            compForwards: null,
+            compMids: null,
+            compDefs: null,
+            score: { our: 0, opp: 0 },
+            round: 1,
+            midWinner: null,
+            midRetry: false,
+        };
+
+        function addMatchStep(stepFunc) {
+            if (!matchMachine.active) return;
+            matchMachine.steps.push(stepFunc);
+        }
+
+        async function runMatchStep() {
+            if (!matchMachine.active) return;
+            if (matchMachine.steps.length === 0) {
+                finishMatchWithModal();
+                return;
+            }
+            const step = matchMachine.steps.shift();
+            await step();
+            await new Promise(resolve => {
+                matchMachine.currentStepResolve = resolve;
+                document.getElementById('nextMatchStepBtn').style.display = 'block';
+            });
+            document.getElementById('nextMatchStepBtn').style.display = 'none';
+            runMatchStep();
+        }
+
+        async function finishMatchWithModal() {
+            matchMachine.active = false;
+            let allOurPlayers = [...matchMachine.ourLineup.forwards, ...matchMachine.ourLineup.mids, ...matchMachine.ourLineup.defs];
+            let bestPlayer = allOurPlayers.sort((a, b) => b.totalStat - a.totalStat)[0];
+            let funnyPlayer = allOurPlayers.sort((a, b) => a.totalStat - b.totalStat)[0];
+
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'modal-mask';
+                modal.innerHTML = `
+                    <div class="modal-card">
+                        <h2>🏆 比赛结束 🏆</h2>
+                        <p style="font-size:1.5rem; margin:10px;">${matchMachine.score.our} : ${matchMachine.score.opp}</p>
+                        <hr>
+                        <p>⭐ 草根球王: ${bestPlayer?.name || "无名英雄"} (总值${bestPlayer?.totalStat})</p>
+                        <p>🤣 金酸梅奖: ${funnyPlayer?.name || "所有人"} (全场最抽象)</p>
+                        <button id="confirmMatchEndBtn" class="btn" style="margin-top:15px;">✅ 确认结束，进入休赛期</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                document.getElementById('confirmMatchEndBtn').onclick = async () => {
+                    modal.remove();
+                    let prize = matchMachine.score.our > matchMachine.score.opp ? 10 : (matchMachine.score.our === matchMachine.score.opp ? 8 : 5);
+                    gameState.gold += prize;
+                    addLog(`💰 奖金${prize}金币！当前${gameState.gold}`);
+                    await applyTrainingReturns();
+                    gameState.phase = "transfer";
+                    setTabsEnabled(true);
+                    switchTab('market');
+                    refreshUI();
+                    resolve();
+                };
+            });
+        }
+
+        async function stepMidfieldBattle() {
+            if (!matchMachine.midRetry) {
+                addLog(`⚡ 第${matchMachine.round}回合`, 'round-main-title');
+                addLog(`⚔️ 中场博弈`, 'round-title');
+            } else {
+                addLog(`🔄 中场博弈重来！`, 'round-title');
+                matchMachine.midRetry = false;
+            }
+            let ourMids = matchMachine.ourLineup.mids;
+            let oppMids = matchMachine.compMids;
+            let ourTotal = 0, oppTotal = 0;
+            for (let p of ourMids) ourTotal += rollPlayerWithFlavor(p, 'midfield', '[我方]');
+            for (let p of oppMids) oppTotal += rollPlayerWithFlavor(p, 'midfield', '[对手]');
+            addLog(`<b>⚙️ 中场战力: 我方 ${ourTotal} vs 对手 ${oppTotal}</b>`);
+            if (ourTotal === 0 && oppTotal === 0) {
+                let funny = getRandomFunny(FUNNY_LIBS.midZero);
+                addLog(`🤪 ${funny}，重新进行中场博弈`);
+                matchMachine.midWinner = null;
+                matchMachine.midRetry = true;
+                addMatchStep(stepMidfieldBattle);
+                return;
+            }
+            matchMachine.midWinner = ourTotal > oppTotal ? "our" : "opp";
+            if (matchMachine.midWinner === "our") {
+                addLog(`<b style="color:#4caf50;">🎉 我方赢得中场，发动进攻！</b>`);
+            } else {
+                addLog(`<b style="color:#e74c3c;">😤 对手赢得中场，发动反击！</b>`);
+            }
+            matchMachine.midRetry = false;
+        }
+
+        async function stepAttackOrDefend() {
+            if (matchMachine.midWinner === "our") {
+                addLog(`🔥 我方进攻`, 'round-title');
+                let extra = Math.max(0, matchMachine.compDefs.length - matchMachine.ourLineup.forwards.length);
+                let extraMids = matchMachine.ourLineup.mids.slice(0, extra);
+                let attackers = [...matchMachine.ourLineup.forwards, ...extraMids];
+                addLog(`⚡ 前锋${matchMachine.ourLineup.forwards.length}人 + 中场助阵${extraMids.length}人 vs 对手后卫${matchMachine.compDefs.length}人`);
+                let attackSum = 0, defendSum = 0;
+                for (let a of attackers) attackSum += rollPlayerWithFlavor(a, 'attack', '[我方]');
+                for (let d of matchMachine.compDefs) defendSum += rollPlayerWithFlavor(d, 'defend', '[对手]');
+                addLog(`<b>🎯 进攻值 ${attackSum} vs 防守值 ${defendSum}</b>`);
+                if (attackSum > defendSum) {
+                    matchMachine.score.our++;
+                    addLog(`<b style="color:#4caf50;">⚽⚽⚽ 进球啦！我方 ${matchMachine.score.our} : ${matchMachine.score.opp} 对手</b>`);
+                } else {
+                    addLog(`<b style="color:#e74c3c;">❌ 进攻被化解，对手门将大笑捡起西瓜...</b>`);
+                }
+            } else {
+                addLog(`🛡️ 对方进攻`, 'round-title');
+                let extra = Math.max(0, matchMachine.ourLineup.defs.length - matchMachine.compForwards.length);
+                let extraMids = matchMachine.compMids.slice(0, extra);
+                let attackers = [...matchMachine.compForwards, ...extraMids];
+                addLog(`⚡ 对手前锋${matchMachine.compForwards.length}人 + 中场${extraMids.length}人 vs 我方后卫${matchMachine.ourLineup.defs.length}人`);
+                let attackSum = 0, defendSum = 0;
+                for (let a of attackers) attackSum += rollPlayerWithFlavor(a, 'attack', '[对手]');
+                for (let d of matchMachine.ourLineup.defs) defendSum += rollPlayerWithFlavor(d, 'defend', '[我方]');
+                addLog(`<b>🎯 对手进攻值 ${attackSum} vs 我方防守值 ${defendSum}</b>`);
+                if (attackSum > defendSum) {
+                    matchMachine.score.opp++;
+                    addLog(`<b style="color:#e74c3c;">😭 对手进球！我方 ${matchMachine.score.our} : ${matchMachine.score.opp} 对手</b>`);
+                } else {
+                    addLog(`<b style="color:#4caf50;">🛡️ 我方成功防守！</b>`);
+                }
+            }
+            matchMachine.round++;
+            if (matchMachine.round <= 10) {
+                addMatchStep(stepMidfieldBattle);
+                addMatchStep(stepAttackOrDefend);
+            }
+        }
+
+        async function startMatch() {
+            if (!updateLineupStatus()) { addLog("❌ 首发阵容未满员！无法开赛"); return false; }
+            if (gameState.phase !== 'match_pre') { addLog("当前不是赛前阶段，请重置或进入下一周"); return false; }
+            setTabsEnabled(false);
+            switchTab('match');
+            document.getElementById('gameLog').innerHTML = '';
+            addLog("🏁 比赛开始！回合制模式，每一步点击【继续】推进。");
+            gameState.phase = "match_ongoing";
+
+            let ourLineup = {
+                forwards: gameState.lineup.forwards.map(id => gameState.players.find(p => p.id === id)).filter(v => v),
+                mids: gameState.lineup.midfielders.map(id => gameState.players.find(p => p.id === id)).filter(v => v),
+                defs: gameState.lineup.defenders.map(id => gameState.players.find(p => p.id === id)).filter(v => v),
+            };
+            let computer = gameState.computerPlayers;
+            let compNeed = getFormationNumbers('442');
+            let compForwards = computer.filter(p => p.position === 'forward').slice(0, compNeed.fw);
+            let compMids = computer.filter(p => p.position === 'midfielder').slice(0, compNeed.mf);
+            let compDefs = computer.filter(p => p.position === 'defender').slice(0, compNeed.df);
+
+            matchMachine.active = true;
+            matchMachine.steps = [];
+            matchMachine.ourLineup = ourLineup;
+            matchMachine.compForwards = compForwards;
+            matchMachine.compMids = compMids;
+            matchMachine.compDefs = compDefs;
+            matchMachine.score = { our: 0, opp: 0 };
+            matchMachine.round = 1;
+            matchMachine.midWinner = null;
+            matchMachine.midRetry = false;
+
+            addMatchStep(stepMidfieldBattle);
+            addMatchStep(stepAttackOrDefend);
+            runMatchStep();
+        }
+
+        document.getElementById('startMatchBtn')?.addEventListener('click', startMatch);
+        document.getElementById('nextMatchStepBtn')?.addEventListener('click', () => {
+            if (matchMachine.currentStepResolve) {
+                matchMachine.currentStepResolve();
+                matchMachine.currentStepResolve = null;
+            }
+        });
+        document.getElementById('refreshMarketBtn')?.addEventListener('click', refreshMarket);
+        document.getElementById('trainBtn')?.addEventListener('click', executeTraining);
+        document.getElementById('nextWeekBtn')?.addEventListener('click', nextWeek);
+        document.getElementById('resetMatchPhaseBtn')?.addEventListener('click', () => {
+            if (gameState.phase === 'match_ongoing') { addLog("比赛进行中无法重置"); return; }
+            gameState.phase = "match_pre";
+            addLog("重置为赛前部署阶段，可调整阵容");
+            refreshUI();
+        });
+        document.getElementById('sortByTotalBtn')?.addEventListener('click', () => {
+            sortDesc = !sortDesc;
+            document.getElementById('sortByTotalBtn').innerText = sortDesc ? "按总值排序↓" : "按总值排序↑";
+            refreshUI();
+        });
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (btn.classList.contains('training-filter-btn')) {
+                    document.querySelectorAll('.training-filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    trainingFilter = btn.dataset.tfilter;
+                    refreshUI();
+                } else if (!btn.classList.contains('training-filter-btn')) {
+                    document.querySelectorAll('.filter-btn:not(.training-filter-btn)').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    refreshUI();
+                }
+            });
+        });
+
+        function renderFormationBtns() {
+            let container = document.getElementById('formationBtns');
+            if (!container) return;
+            container.innerHTML = '';
+            ['442', '433', '343', '532'].forEach(f => {
+                let btn = document.createElement('button');
+                btn.className = 'btn btn-small';
+                btn.innerText = f;
+                btn.onclick = () => {
+                    if (gameState.phase !== 'transfer' && gameState.phase !== 'match_pre') { addLog("比赛中无法变阵"); return; }
+                    gameState.formation = f;
+                    gameState.lineup = { forwards: [], midfielders: [], defenders: [] };
+                    let nums = getFormationNumbers(f);
+                    addLog(`变阵 ${f} (${nums.df}后卫 ${nums.mf}中场 ${nums.fw}前锋)，请重新部署首发`);
+                    refreshUI();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function startGame() {
+            // 重置名字去重集合，开始全新一局
+            usedPlayerNames = new Set();
+            gameState.players = initSquad();
+            gameState.computerPlayers = generateComputerTeam();
+            gameState.gold = 50;
+            gameState.marketPlayers = [];
+            for (let i = 0; i < 3; i++) gameState.marketPlayers.push(generatePlayer(['forward', 'midfielder', 'defender'][i % 3], 'initM' + i, randomRange(10, 18)));
+            gameState.trainingSlots = [null, null];
+            gameState.phase = "match_pre";
+            gameState.formation = "442";
+            gameState.lineup = { forwards: [], midfielders: [], defenders: [] };
+            gameState.trainingLocked = false;
+            gameState.pendingReturns = [];
+            refreshUI();
+            addLog("🎉 草根足球经理启动！5前锋+6中场+7后卫已就位，开始你的征程吧！");
+        }
+        startGame();
+    </script>
+</body>
+</html>
